@@ -1,30 +1,45 @@
 import numpy as np
 # from coptpy import *
-#import cvxopt
+import cvxopt
 import cvxpy as cp
 from sklearn.model_selection import train_test_split 
 import random
 from sklearn.metrics import r2_score,mean_squared_error, mean_absolute_error,mean_absolute_percentage_error
-def rbf_kernel(x, y, sigma):
-    
-    diff = np.linalg.norm(x - y) ** 2
-    k = np.exp(-diff / (2 * sigma **2))
+from scipy.stats import uniform, randint
+def rbf_kernel(x,y, gamma):
+    diff = np.linalg.norm(x-y) ** 2
+    k= np.exp(-diff / (2 * gamma **2))      
     return k
-# 产生G矩阵
-def generateG(x):
-    N, n = x.shape
-    e = np.ones((N, 1))
-    
-    G = np.hstack(( x, e))
+
+def kernel_mat(A, B, gamma):
+    n1, _ = A.shape
+    n2,_=B.shape
+    k_mat = np.zeros((n1, n2))
+    for i in range(n1):
+        for j in range(n2):
+            k_mat[i,j] = rbf_kernel(A[i], B[j], gamma)
+    return k_mat
+
+
+
+# 产生G矩阵,X1是训练样本，x2是训练或者测试样本
+def generateG(x1,x2,gamma):
+    N, n = x1.shape
+    e = np.ones(( N,1))
+    m=kernel_mat(x1,x2 , gamma)
+    G = np.hstack(( m, e))
     return G
-class TSVR:
+class rbfTSVR:
+
     
     
-    def __init__(self, C1, C2,eps1,eps2):
+    def __init__(self, C1, C2,eps1,eps2,gamma1,gamma2):
         self.C1 = C1
         self.C2 = C2
         self.eps1=eps1
         self.eps2=eps2
+        self.gamma1=gamma1
+        self.gamma2=gamma2
         self.u1 = None#u1=[w1;b1]
         self.u2 = None#u2=[w2;b2]
         self.rmse_tr = None
@@ -45,29 +60,27 @@ class TSVR:
         C2 = self.C2     
         eps1=self.eps1
         eps2=self.eps2
+        gamma1=self.gamma1
+        gamma2=self.gamma2
         
-        G_tr=generateG(x_tr)
+        G_tr=generateG(x_tr,x_tr,gamma1)
         
-        N, l = G_tr.shape
-        
+        N,l = G_tr.shape
+        #N=x_tr.shape[0]
         e = np.ones((N, 1))
         f=y_tr-e*eps1
         alpha1 = cp.Variable((N, 1))
         
-        expr1 = G_tr@np.linalg.inv(G_tr.T@G_tr)@G_tr.T
-        expr1=expr1+0.001*np.identity(N, dtype=int)
-        expr1 = np.triu(expr1)
-        expr1 =     expr1 + expr1.T - np.diag(expr1.diagonal())
-        
-        #expr3 = cp.atoms.affine.wraps.psd_wrap(expr3)
+        expr1 = G_tr@np.linalg.inv(G_tr.T@G_tr+0.0001*np.identity(l, dtype=int))@G_tr.T
+        expr1 = expr1+0.0001*np.identity(N, dtype=int)
         expr1 = cp.atoms.affine.wraps.psd_wrap(expr1)
         expr2=expr1@alpha1
         
 
 
-        objective = cp.Minimize( f.T@alpha1- f.T @ expr2)
-        #objective = cp.Minimize((1/2) * cp.quad_form(alpha1, expr1) - f.T @ expr2+f.T@alpha1)
-        constraints = [0 <= alpha1, alpha1 <= C1 * e / N]
+        objective = cp.Minimize((1/2) * cp.quad_form(alpha1, expr1) - f.T @ expr2+f.T@alpha1)
+        #objective = cp.Minimize(f.T@alpha1 - f.T @ expr2)
+        constraints = [0 <= alpha1, alpha1 <= C1 * e ]
         prob = cp.Problem(objective, constraints)
         results = prob.solve(solver=cp.GUROBI)
         #results = prob.solve(solver='COPT')
@@ -83,17 +96,17 @@ class TSVR:
     
         alpha2 = cp.Variable((N, 1))
         h=y_tr+e*eps2
+        H_tr=generateG(x_tr,x_tr,gamma2)
         
-        expr11 = G_tr@np.linalg.inv(G_tr.T@G_tr)@G_tr.T
-        expr11=expr11+0.001*np.identity(N, dtype=int)
-        expr11 = np.triu(expr11)
-        expr11 =     expr11 + expr11.T - np.diag(expr11.diagonal())
+        expr11 = H_tr@np.linalg.inv(H_tr.T@H_tr+0.0001*np.identity(l, dtype=int))@H_tr.T
+        expr11 = expr11+0.0001*np.identity(N, dtype=int)
         expr11 = cp.atoms.affine.wraps.psd_wrap(expr11)
         expr22=expr11@alpha2
         
        
-        objective = cp.Minimize(h.T @ expr22-h.T@alpha2)
-        #objective = cp.Minimize((1/2) * cp.quad_form(alpha2, expr11) +h.T @ expr22-h.T@alpha2)
+
+        objective = cp.Minimize((1/2) * cp.quad_form(alpha2, expr11) +h.T @ expr22-h.T@alpha2)
+        #objective = cp.Minimize( h.T @ expr22-h.T@alpha2)
         constraints = [0 <= alpha2, alpha2 <= C2 * e ]
         prob = cp.Problem(objective, constraints)
         results = prob.solve(solver=cp.GUROBI)
@@ -102,9 +115,7 @@ class TSVR:
         alpha2=alpha2.value
 
         u1=np.linalg.inv(G_tr.T@G_tr+0.0001*np.identity(l, dtype=int))@G_tr.T@(f-alpha1)
-       
-        u2=np.linalg.inv(G_tr.T@G_tr+0.0001*np.identity(l, dtype=int))@G_tr.T@(h+alpha2)
-        
+        u2=np.linalg.inv(H_tr.T@H_tr+0.0001*np.identity(l, dtype=int))@H_tr.T@(h+alpha2)
         self.u1 = u1
         self.u2 = u2
         
@@ -117,12 +128,18 @@ class TSVR:
         self.x_tr = x_tr
         self.y_tr = y_tr
         
-    def predict(self, x_te): #仅需要x_tr去训练
-        G_te= generateG(x_te)
+    def predict(self,x_tr, x_te): #仅需要x_tr去训练,m是test_size
+        gamma1=self.gamma1
+        gamma2=self.gamma2
+        N=x_te.shape[0]
+        G_te= generateG(x_te,x_tr,gamma1)
+        H_te= generateG(x_te,x_tr,gamma2)
         u1 = self.u1
+        #u1=u1[-(N+1):]
         u2 = self.u2
+        #u2=u2[-(N+1):]
         y_hat1=G_te@u1
-        y_hat2=G_te@u2
+        y_hat2=H_te@u2
         y_hat=(y_hat1+y_hat2)/2
         self.y_te_predict = y_hat
         
@@ -136,20 +153,19 @@ class TSVR:
         return y_hat
 
 
-    #def random_search(param_space,x,y, n_iter=500):
-    def random_search(x,y, n_iter=1):
-
-        X_train, X_test, y_train, y_test = train_test_split(x, y, test_size=0.3, random_state=41)
+    #def random_search_1(param_space,x,y, n_iter=500):
+    def random_search_1(X_train, X_test, y_train, y_test, n_iter=5):
         param_space={    'C1': [2**i for i in range(-8, 9)],
-                'C2': [2**i for i in range(-8, 9)],
-            'eps1': [2**i for i in range(-3, 4)], 
-            'eps2': [2**i for i in range(-3, 4)],
-              }    
+        'C2': [2**i for i in range(-8, 9)],
+        'eps1': [2**i for i in range(-3, 4)], 
+        'eps2': [2**i for i in range(-3, 4)],
+        'gamma1':  [2**i for i in range(-3, 4)],
+        'gamma2':  [2**i for i in range(-3, 4)],}
+        
         
 
 
-       
-  
+    
         n = len(param_space)
         dict={}
         def get_list(n):
@@ -185,7 +201,7 @@ class TSVR:
 
             params = {}
             #values=[1,1,0.5,0.5]
-            for i in range(1):
+            for i in range(2**n):
                 for key, value in dict[f"dict{i}"].items():
                     params[key] = random.choice(value)
                 #这里的random要是有规则的random，以便更好的找到表现好的解
@@ -193,10 +209,10 @@ class TSVR:
                            
                 values = list(params.values())
                 # print(values)
-                reg=TSVR(values[0], values[1],values[2], values[3])
+                reg=rbfTSVR(values[0], values[1],values[2], values[3],values[4], values[5])
                 # print(values[0], values[1],values[2], values[3])
                 reg.fit(X_train,y_train)
-                y_pred=reg.predict(X_test)   
+                y_pred=reg.predict(X_train,X_test)   
                 score = mean_squared_error(y_test, y_pred, squared=False)+mean_absolute_error( y_test,y_pred)
             
                 if score < best_score:
