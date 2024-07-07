@@ -1,5 +1,4 @@
 import numpy as np
-#import cvxopt
 import cvxpy as cp
 from sklearn.model_selection import train_test_split 
 import random
@@ -70,8 +69,6 @@ class DWPTSVR:
     """
     
     def __init__(self, C1, C2, nu1,lambda1,C3, C4, nu2, lambda2):
-        #C1= C3 =16
-        #nu1 =nu2 =0.2
         self.C1 = C1
         self.C2 = C2
         self.nu1 = nu1
@@ -95,7 +92,7 @@ class DWPTSVR:
         self.y_te = None
         self.y_te_predict = None
 
-    def fit(self, x_tr, y_tr):#应该可以用输入x替代G
+    def fit(self, x_tr, y_tr):
         C1 = self.C1
         C2 = self.C2
         nu1 = self.nu1
@@ -226,7 +223,7 @@ class DWPTSVR:
 
     #def random_search1(param_space,x,y, n_iter=500):
     #考虑增加迭代次数，会加速
-    def random_search1(x,y, n_iter=10): #n_iter=5
+    def random_search1(x,y, n_iter=10): 
         X_train, X_test, y_train, y_test = train_test_split(x, y, test_size=0.3, random_state=41)
         param = {
         'C1': [2**i for i in range(-3, 4)],
