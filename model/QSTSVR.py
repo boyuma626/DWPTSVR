@@ -30,7 +30,7 @@ def generateS(x):
     z = np.hstack((s, x))
             
     return z 
-class QSSVR:
+class QSTSVR:
     def generateS(x):
         N, n = x.shape
         e = np.ones((N, 1))
