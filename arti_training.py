@@ -80,7 +80,7 @@ class training:
 
 
             from model.DWPTSVR import DWPTSVR
-            from model.QSSVR import QSSVR
+            from model.QSTSVR import QSTSVR
             from model.rbfTSVR import rbfTSVR
             from model.TSVR import TSVR
 
@@ -116,7 +116,7 @@ class training:
             #参数空间：7*17*19*19=43，000
 
             para1=DWPTSVR.random_search1(x,y)
-            para2=QSSVR.random_search2(x,y)
+            para2=QSTSVR.random_search2(x,y)
             import matplotlib.pyplot as plt
             # 加载数据集
 
@@ -157,7 +157,7 @@ class training:
 
             #同DWPTSVR：43，000
             
-            reg2=QSSVR(16,para2[0],0.2,para2[1],16,para2[2],0.2,para2[3])
+            reg2=QSTSVR(16,para2[0],0.2,para2[1],16,para2[2],0.2,para2[3])
 
             start = time.time()
             reg2.fit(X_train,y_train)
