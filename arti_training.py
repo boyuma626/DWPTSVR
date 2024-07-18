@@ -121,7 +121,7 @@ class training:
             # 加载数据集
 
             #参数空间：17*7=119
-            from model.DWPSVRP import DWPSVRP
+            from model.DWPSVR import DWPSVRP
 
             para=DWPSVRP.random_search0(x,y)
 
