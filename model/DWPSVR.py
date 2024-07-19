@@ -3,7 +3,7 @@ import cvxpy as cp
 from sklearn.model_selection import train_test_split 
 import random
 from gurobipy import *
-from sklearn.metrics import r2_score,mean_squared_error, mean_absolute_error,mean_absolute_percentage_error
+from sklearn.metrics import r2_score,root_mean_squared_error, mean_absolute_error,mean_absolute_percentage_error
 from scipy.stats import uniform, randint
 def hvec(A):
     m = A.shape[0]
@@ -250,7 +250,7 @@ class DWPSVRP:
                 # print(values[0], values[1],values[2], values[3])
                 reg.fit(X_train,y_train)
                 y_pred=reg.predict(X_test)   
-                score = mean_squared_error(y_test, y_pred, squared=False)+mean_absolute_error( y_test,y_pred)
+                score = root_mean_squared_error(y_test, y_pred)+mean_absolute_error( y_test,y_pred)
             
                 if score < best_score:
                     best_score = score
