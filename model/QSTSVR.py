@@ -222,11 +222,11 @@ class QSTSVR:
                            
                 values = list(params.values())
                 # print(values)
-                reg=QSSVR(values[0], values[1],values[2], values[3],values[4], values[5],values[6], values[7])
+                reg=QSTSVR(values[0], values[1],values[2], values[3],values[4], values[5],values[6], values[7])
                 # print(values[0], values[1],values[2], values[3])
                 reg.fit(X_train,y_train)
                 y_pred=reg.predict(X_test)   
-                score = mean_squared_error(y_test, y_pred, squared=False)+mean_absolute_error( y_test,y_pred)
+                score = root_mean_squared_error(y_test, y_pred)+mean_absolute_error( y_test,y_pred)
             
                 if score < best_score:
                     best_score = score
