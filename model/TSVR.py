@@ -1,6 +1,4 @@
 import numpy as np
-# from coptpy import *
-import cvxopt
 import cvxpy as cp
 from sklearn.model_selection import train_test_split 
 import random
