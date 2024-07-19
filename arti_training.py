@@ -71,7 +71,7 @@ class training:
             param_dist1 = {'C': uniform(2 ** np.random.randint(-8, 9)),}
 
             # 使用随机搜索进行超参数调节
-            random_search = RandomizedSearchCV(model_svr, param_distributions=param_dist1, n_iter=10, cv=5, random_state=42, n_jobs=-1)
+            random_search = RandomizedSearchCV(model_svr, param_distributions=param_dist1, n_iter=100, cv=5, random_state=42, n_jobs=-1)
             random_search.fit(X_train, y_train.ravel())
             best_params2=list(random_search.best_params_.values())
 
