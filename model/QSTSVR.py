@@ -2,7 +2,7 @@ import numpy as np
 import cvxpy as cp
 from sklearn.model_selection import train_test_split 
 import random
-from sklearn.metrics import r2_score,mean_squared_error, mean_absolute_error,mean_absolute_percentage_error
+from sklearn.metrics import r2_score,root_mean_squared_error, mean_absolute_error,mean_absolute_percentage_error
 from scipy.stats import uniform, randint
 def lvec(x):
     N, n = x.shape
@@ -168,7 +168,8 @@ class QSTSVR:
         #self.y_te = y_te
         return y_hat  
     #def random_search2(param_space,x,y, n_iter=500):
-    def random_search2(X_train, X_test, y_train, y_test, n_iter=5):
+    def random_search2(x,y, n_iter=5):
+        X_train, X_test, y_train, y_test = train_test_split(x, y, test_size=0.3, random_state=41)
         param_space = {
         'C1': [2**i for i in range(-3, 4)],
         'C2': [2**i for i in range(-8, 9)],
