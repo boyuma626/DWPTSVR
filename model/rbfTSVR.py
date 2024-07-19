@@ -152,7 +152,8 @@ class rbfTSVR:
 
 
     #def random_search_1(param_space,x,y, n_iter=500):
-    def random_search_1(X_train, X_test, y_train, y_test, n_iter=5):
+    def random_search_1(x,y, n_iter=5):
+        X_train, X_test, y_train, y_test = train_test_split(x, y, test_size=0.3, random_state=41)
         param_space={    'C1': [2**i for i in range(-8, 9)],
         'C2': [2**i for i in range(-8, 9)],
         'eps1': [2**i for i in range(-3, 4)], 
